@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charSet="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Plane blade camber calculator</title>
+    <meta name="description" content="Plane blade camber calculator"/>
+    <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' integrity='sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u' crossorigin='anonymous'>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+    <script>
+      var model = {
+        bedAngle: { value: 45.0, text: "45.0", hasError: false },
+        bladeWidth: { value: 2.0, text: "2.0", hasError: false },
+        depthOfCut: { value: 0.031, text: "0.031", hasError: false },
+        projection: { value: 0, text: "", hasError: false },
+        radius: { value: 0, text: "", hasError: false }
+      }
+
+      function deg2rad(deg) {
+        return Math.PI * deg / 180.0;
+      }
+
+      function recomputeFromDepthOfCut() {
+        model.projection.value = model.depthOfCut.value / Math.sin(deg2rad(model.bedAngle.value));
+        model.projection.text = model.projection.value.toFixed(3);
+        model.radius.value = 0.5 * model.projection.value + Math.pow(model.bladeWidth.value, 2) / (8 * model.projection.value);
+        model.radius.text = model.radius.value.toFixed(1);
+        $('#inputProjection').val(model.projection.text);
+        $('#inputRadius').val(model.radius.text);
+      }
+
+      function recomputeFromProjection() {
+        model.radius.value = 0.5 * model.projection.value + Math.pow(model.bladeWidth.value, 2) / (8 * model.projection.value);
+        model.radius.text = model.radius.value.toFixed(1);
+        model.depthOfCut.value = model.projection.value * Math.sin(deg2rad(model.bedAngle.value));
+        model.depthOfCut.text = model.depthOfCut.value.toFixed(3);
+        $('#inputRadius').val(model.radius.text);
+        $('#inputDepthOfCut').val(model.depthOfCut.text);
+      }
+
+      function recomputeFromRadius() {
+        model.projection.value =
+          model.radius.value * (1 - Math.sqrt(1 - Math.pow(model.bladeWidth.value / (2 * model.radius.value), 2)));
+        model.projection.text = model.projection.value.toFixed(3);
+        model.depthOfCut.value = model.projection.value * Math.sin(deg2rad(model.bedAngle.value));
+        model.depthOfCut.text = model.depthOfCut.value.toFixed(3);
+        $('#inputDepthOfCut').val(model.depthOfCut.text);
+        $('#inputProjection').val(model.projection.text);
+      }
+
+      function setParam(selector, getter, recomputer) {
+        var text = selector.val();
+        var param = getter();
+        param.hasError = !$.isNumeric(text);
+        if (!param.hasError) {
+          param.value = parseFloat(text);
+          selector.parent().removeClass('has-error');
+        } else {
+          selector.parent().addClass('has-error');
+        }
+        param.text = text;
+        recomputer();
+      }
+
+      function setBedAngle() {
+        setParam($('#inputBedAngle'), function() { return model.bedAngle; }, recomputeFromDepthOfCut);
+      }
+
+      function setBladeWidth() {
+        setParam($('#inputBladeWidth'), function() { return model.bladeWidth; }, recomputeFromDepthOfCut);
+      }
+
+      function setDepthOfCut() {
+        setParam($('#inputDepthOfCut'), function() { return model.depthOfCut; }, recomputeFromDepthOfCut);
+      }
+
+      function setProjection() {
+        setParam($('#inputProjection'), function() { return model.projection; }, recomputeFromProjection);
+      }
+
+      function setRadius() {
+        setParam($('#inputRadius'), function() { return model.radius; }, recomputeFromRadius);
+      }
+
+    </script>
+  </head>
+  <body>
+    <!--<div id="main"></div>-->
+    <form>
+      <div class="container">
+        <div class="col-sm-4">
+          <div class="well well-sm">
+            <div class="row">
+              <div class="col-sm-12">
+                <div class="form-group">
+                  <label class="control-label" for="inputBedAngle">Bed (frog) angle</label>
+                  <input type="text" id="inputBedAngle" class="form-control" value="45.0" oninput="setBedAngle();"/>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-sm-12">
+                <div class="form-group">
+                  <label class="control-label" for="inputBladeWidth">Blade width</label>
+                  <input type="number" id="inputBladeWidth" class="form-control" value="2.0" oninput="setBladeWidth();"/>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="well well-sm">
+            <div class="row">
+              <div class="col-sm-12">
+                <div class="form-group">
+                  <label class="control-label" for="inputDepthOfCut">Depth of cut (max)</label>
+                  <input type="number" id="inputDepthOfCut" class="form-control" value="0.031" oninput="setDepthOfCut();"/>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-sm-12">
+                <div class="form-group">
+                  <label class="control-label" for="inputProjection">Projection</label>
+                  <input type="number" id="inputProjection" class="form-control" oninput="setProjection();"/>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-sm-12">
+                <div class="form-group">
+                  <label class="control-label" for="inputRadius">Radius of curvature</label>
+                  <input type="number" id="inputRadius" class="form-control" oninput="setRadius();"/>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+    <script>
+      recomputeFromDepthOfCut();
+    </script>
+  </body>
+</html>
